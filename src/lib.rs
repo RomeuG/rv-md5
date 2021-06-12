@@ -650,7 +650,7 @@ impl MD5_AVX2 {
     fn update(&mut self, data1: &[u8], data2: &[u8], data3: &[u8], data4: &[u8], data5: &[u8], data6: &[u8], data7: &[u8], data8: &[u8]) {
         let mut i = 0;
         let mut index = (self.count[0] >> 3) & 0x3F;
-        let mut data_len = data1.len();
+        let data_len = data1.len();
 
         self.count[0] += (data_len << 3) as u64;
         if self.count[0] < (data_len << 3) as u64 {
@@ -739,15 +739,51 @@ impl MD5_AVX2 {
         digests
     }
 
-    pub fn digest(input: &[u8]) -> [[u8; 16]; 8]{
+    pub fn digest(input: &[u8]) -> [[u8; 16]; 8] {
         let mut test = Self::default();
         test.update1(input);
         return test.finalize();
     }
 
+    pub fn digest2(input1: &[u8], input2: &[u8]) {
+        let mut object = Self::default();
+        object.update2(input1, input2);
+        object.finalize();
+    }
+
+    pub fn digest3(input1: &[u8], input2: &[u8], input3: &[u8]) {
+        let mut object = Self::default();
+        object.update3(input1, input2, input3);
+        object.finalize();
+    }
+
+    pub fn digest4(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8]) {
+        let mut object = Self::default();
+        object.update4(input1, input2, input3, input4);
+        object.finalize();
+    }
+
+    pub fn digest5(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8]) {
+        let mut object = Self::default();
+        object.update5(input1, input2, input3, input4, input5);
+        object.finalize();
+    }
+
+    pub fn digest6(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8]) {
+        let mut object = Self::default();
+        object.update6(input1, input2, input3, input4, input5, input6);
+        object.finalize();
+    }
+
+    pub fn digest7(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8], input7: &[u8]) {
+        let mut object = Self::default();
+        object.update7(input1, input2, input3, input4, input5, input6, input7);
+        object.finalize();
+    }
+
     pub fn digest8(input1: &[u8],input2: &[u8],input3: &[u8],input4: &[u8],input5: &[u8],input6: &[u8],input7: &[u8],input8: &[u8]) {
         let mut test = Self::default();
-        test.update(input1,input2,input3,input4,input5,input6,input7,input8);
+        test.update8(input1, input2, input3, input4, input5, input6, input7, input8);
         test.finalize();
     }
 }
