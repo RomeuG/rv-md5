@@ -377,14 +377,7 @@ fn md5_i_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
 pub struct MD5_AVX2 {
     state: [__m256i; 4],
     count: [u64; 2],
-    b1: [u8; 64],
-    b2: [u8; 64],
-    b3: [u8; 64],
-    b4: [u8; 64],
-    b5: [u8; 64],
-    b6: [u8; 64],
-    b7: [u8; 64],
-    b8: [u8; 64],
+    blocks: [[u8; 64]; 8],
 }
 
 macro_rules! MD5_AVX2_FUNCTION {
@@ -412,14 +405,14 @@ impl MD5_AVX2 {
             let index2_u = *index2 as usize;
 
             x[index] = unsafe { _mm256_set_epi32(
-                (self.b8[index2_u] as i32) | ((self.b8[index2_u+1] as i32) << 8) | ((self.b8[index2_u+2] as i32) << 16) | ((self.b8[index2_u+3] as i32) << 24),
-                (self.b7[index2_u] as i32) | ((self.b7[index2_u+1] as i32) << 8) | ((self.b7[index2_u+2] as i32) << 16) | ((self.b7[index2_u+3] as i32) << 24),
-                (self.b6[index2_u] as i32) | ((self.b6[index2_u+1] as i32) << 8) | ((self.b6[index2_u+2] as i32) << 16) | ((self.b6[index2_u+3] as i32) << 24),
-                (self.b5[index2_u] as i32) | ((self.b5[index2_u+1] as i32) << 8) | ((self.b5[index2_u+2] as i32) << 16) | ((self.b5[index2_u+3] as i32) << 24),
-                (self.b4[index2_u] as i32) | ((self.b4[index2_u+1] as i32) << 8) | ((self.b4[index2_u+2] as i32) << 16) | ((self.b4[index2_u+3] as i32) << 24),
-                (self.b3[index2_u] as i32) | ((self.b3[index2_u+1] as i32) << 8) | ((self.b3[index2_u+2] as i32) << 16) | ((self.b3[index2_u+3] as i32) << 24),
-                (self.b2[index2_u] as i32) | ((self.b2[index2_u+1] as i32) << 8) | ((self.b2[index2_u+2] as i32) << 16) | ((self.b2[index2_u+3] as i32) << 24),
-                (self.b1[index2_u] as i32) | ((self.b1[index2_u+1] as i32) << 8) | ((self.b1[index2_u+2] as i32) << 16) | ((self.b1[index2_u+3] as i32) << 24)
+                (self.blocks[7][index2_u] as i32) | ((self.blocks[7][index2_u+1] as i32) << 8) | ((self.blocks[7][index2_u+2] as i32) << 16) | ((self.blocks[7][index2_u+3] as i32) << 24),
+                (self.blocks[6][index2_u] as i32) | ((self.blocks[6][index2_u+1] as i32) << 8) | ((self.blocks[6][index2_u+2] as i32) << 16) | ((self.blocks[6][index2_u+3] as i32) << 24),
+                (self.blocks[5][index2_u] as i32) | ((self.blocks[5][index2_u+1] as i32) << 8) | ((self.blocks[5][index2_u+2] as i32) << 16) | ((self.blocks[5][index2_u+3] as i32) << 24),
+                (self.blocks[4][index2_u] as i32) | ((self.blocks[4][index2_u+1] as i32) << 8) | ((self.blocks[4][index2_u+2] as i32) << 16) | ((self.blocks[4][index2_u+3] as i32) << 24),
+                (self.blocks[3][index2_u] as i32) | ((self.blocks[3][index2_u+1] as i32) << 8) | ((self.blocks[3][index2_u+2] as i32) << 16) | ((self.blocks[3][index2_u+3] as i32) << 24),
+                (self.blocks[2][index2_u] as i32) | ((self.blocks[2][index2_u+1] as i32) << 8) | ((self.blocks[2][index2_u+2] as i32) << 16) | ((self.blocks[2][index2_u+3] as i32) << 24),
+                (self.blocks[1][index2_u] as i32) | ((self.blocks[1][index2_u+1] as i32) << 8) | ((self.blocks[1][index2_u+2] as i32) << 16) | ((self.blocks[1][index2_u+3] as i32) << 24),
+                (self.blocks[0][index2_u] as i32) | ((self.blocks[0][index2_u+1] as i32) << 8) | ((self.blocks[0][index2_u+2] as i32) << 16) | ((self.blocks[0][index2_u+3] as i32) << 24)
             )};
         }
 
@@ -666,14 +659,14 @@ impl MD5_AVX2 {
 
             let index_usize = index as usize;
 
-            unsafe { core::intrinsics::copy_nonoverlapping(data1.as_ptr(), self.b1[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data2.as_ptr(), self.b2[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data3.as_ptr(), self.b3[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data4.as_ptr(), self.b4[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data5.as_ptr(), self.b5[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data6.as_ptr(), self.b6[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data7.as_ptr(), self.b7[(index_usize)..].as_mut_ptr(), partial_len_usize); }
-            unsafe { core::intrinsics::copy_nonoverlapping(data8.as_ptr(), self.b8[(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data1.as_ptr(), self.blocks[0][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data2.as_ptr(), self.blocks[1][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data3.as_ptr(), self.blocks[2][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data4.as_ptr(), self.blocks[3][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data5.as_ptr(), self.blocks[4][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data6.as_ptr(), self.blocks[5][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data7.as_ptr(), self.blocks[6][(index_usize)..].as_mut_ptr(), partial_len_usize); }
+            unsafe { core::intrinsics::copy_nonoverlapping(data8.as_ptr(), self.blocks[7][(index_usize)..].as_mut_ptr(), partial_len_usize); }
 
             self.transform_blocks();
 
@@ -706,14 +699,14 @@ impl MD5_AVX2 {
         let index_usize = index as usize;
         let copy_n = data_len - (i as usize);
 
-        unsafe { core::intrinsics::copy_nonoverlapping(data1[i_usize..].as_ptr(), self.b1[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data2[i_usize..].as_ptr(), self.b2[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data3[i_usize..].as_ptr(), self.b3[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data4[i_usize..].as_ptr(), self.b4[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data5[i_usize..].as_ptr(), self.b5[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data6[i_usize..].as_ptr(), self.b6[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data7[i_usize..].as_ptr(), self.b7[(index_usize)..].as_mut_ptr(), copy_n); }
-        unsafe { core::intrinsics::copy_nonoverlapping(data8[i_usize..].as_ptr(), self.b8[(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data1[i_usize..].as_ptr(), self.blocks[0][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data2[i_usize..].as_ptr(), self.blocks[1][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data3[i_usize..].as_ptr(), self.blocks[2][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data4[i_usize..].as_ptr(), self.blocks[3][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data5[i_usize..].as_ptr(), self.blocks[4][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data6[i_usize..].as_ptr(), self.blocks[5][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data7[i_usize..].as_ptr(), self.blocks[6][(index_usize)..].as_mut_ptr(), copy_n); }
+        unsafe { core::intrinsics::copy_nonoverlapping(data8[i_usize..].as_ptr(), self.blocks[7][(index_usize)..].as_mut_ptr(), copy_n); }
     }
 
     fn finalize(&mut self) -> [[u8; 16]; 8] {
@@ -740,9 +733,9 @@ impl MD5_AVX2 {
     }
 
     pub fn digest(input: &[u8]) -> [[u8; 16]; 8] {
-        let mut test = Self::default();
-        test.update1(input);
-        return test.finalize();
+        let mut object = Self::default();
+        object.update1(input);
+        return object.finalize();
     }
 
     pub fn digest2(input1: &[u8], input2: &[u8]) {
@@ -782,9 +775,9 @@ impl MD5_AVX2 {
     }
 
     pub fn digest8(input1: &[u8],input2: &[u8],input3: &[u8],input4: &[u8],input5: &[u8],input6: &[u8],input7: &[u8],input8: &[u8]) {
-        let mut test = Self::default();
-        test.update8(input1, input2, input3, input4, input5, input6, input7, input8);
-        test.finalize();
+        let mut object = Self::default();
+        object.update8(input1, input2, input3, input4, input5, input6, input7, input8);
+        object.finalize();
     }
 }
 
@@ -798,14 +791,7 @@ impl Default for MD5_AVX2 {
                 unsafe { _mm256_set1_epi32((0x10325476 as u32) as i32) },
             ],
             count: [0, 0],
-            b1: [0; 64],
-            b2: [0; 64],
-            b3: [0; 64],
-            b4: [0; 64],
-            b5: [0; 64],
-            b6: [0; 64],
-            b7: [0; 64],
-            b8: [0; 64],
+            blocks: [[0; 64]; 8],
         }
     }
 }
@@ -842,28 +828,28 @@ mod tests {
     }
 
     #[bench]
-    fn bench_sha256_32bytes(b: &mut Bencher) {
+    fn bench_md5_32bytes_digest(b: &mut Bencher) {
         b.iter(|| {
             MD5_AVX2::digest("wqvDrDLilCUevxUw5fWEuVc6y6ElCrHg".as_bytes());
         });
     }
 
     #[bench]
-    fn bench_md5_64bytes(b: &mut Bencher) {
+    fn bench_md5_64bytes_digest(b: &mut Bencher) {
         b.iter(|| {
             MD5_AVX2::digest("K7CN3VzXyY63NXmW15TKA4O6vJtVrLc7I0B5qHRtBir5PkwSt6xgJopOCunPk2ky".as_bytes());
         });
     }
 
     #[bench]
-    fn bench_sha256_128bytes(b: &mut Bencher) {
+    fn bench_md5_128bytes_digest(b: &mut Bencher) {
         b.iter(|| {
             MD5_AVX2::digest("KAjb6sifm7DwdyJyMXT3np6WZVfXJiEskX1fN7V8YOatxuRkpHYZmqDXY2Kn2pfnV63l0bodaXjRdVF5m2z1bC7QpdQi3UHRI9KAqWs0vO0QjT5XtkTXKlaRK4CiBsT1".as_bytes());
         });
     }
 
     #[bench]
-    fn bench_sha256_256bytes(b: &mut Bencher) {
+    fn bench_md5_256bytes_digest(b: &mut Bencher) {
         b.iter(|| {
             MD5_AVX2::digest("QnpFg2P1SEQ0L9tcNwBROCW7jVtFeMt0RuF7QODKkgD75CPDi1pAB1GtMcq0G1pmNE6J3IuPpF33uPtOs4sNwU7lKcnF8SU016PKWPeVEpuKQ2ksT9enIf1hVrzlypOkhFTFhIS28IT9OQZ3BS3693487mSb6QNuuaBCD8yNWWlo74c79EFWUWNaAmRcSxVaNcbDa80SovlnL8lyO2yS7XlmE7rPmLI4IvPtko3QguI4Th2JPrVnM7QCCjMgvlIO".as_bytes());
         });
