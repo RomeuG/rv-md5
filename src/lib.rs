@@ -360,17 +360,13 @@ fn md5_f_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
 }
 
 #[inline(always)]
-fn md5_g_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
-    unsafe { _mm256_or_si256(_mm256_and_si256(x, z), _mm256_andnot_si256(z, y)) }
-}
-
-#[inline(always)]
 fn md5_h_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
     unsafe { _mm256_xor_si256(x, _mm256_xor_si256(y, z)) }
 }
 
 #[inline(always)]
 fn md5_i_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
+    // NOTE: optimization possible, review
     unsafe { _mm256_xor_si256(y, _mm256_or_si256(x, _mm256_andnot_si256(z, _mm256_cmpeq_epi32(z, z)))) }
 }
 
@@ -385,6 +381,16 @@ macro_rules! MD5_AVX2_FUNCTION {
         let res = $f($b, $c, $d);
 
         $a = unsafe { _mm256_add_epi32($a, _mm256_add_epi32(_mm256_add_epi32(res, $x), $ac)) };
+        $a = rotate_left_avx2($a, $s);
+        $a = unsafe { _mm256_add_epi32($a, $b) };
+    }
+}
+
+macro_rules! MD5_AVX2_FUNCTION_G {
+    ($a:expr, $b:expr, $c:expr, $d:expr, $x:expr, $s:expr, $ac:expr) => {
+        $a = unsafe { _mm256_add_epi32($a, _mm256_add_epi32($x, $ac)) };
+        $a = unsafe { _mm256_add_epi32($a, _mm256_andnot_si256($d, $c)) };
+        $a = unsafe { _mm256_add_epi32($a, _mm256_and_si256($d, $b)) };
         $a = rotate_left_avx2($a, $s);
         $a = unsafe { _mm256_add_epi32($a, $b) };
     }
@@ -417,76 +423,76 @@ impl MD5_AVX2 {
         }
 
         // round 1 F
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 0], S11, _mm256_set1_epi32((0xd76aa478 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 1], S12, _mm256_set1_epi32((0xe8c7b756 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 2], S13, _mm256_set1_epi32((0x242070db as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 3], S14, _mm256_set1_epi32((0xc1bdceee as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 4], S11, _mm256_set1_epi32((0xf57c0faf as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 5], S12, _mm256_set1_epi32((0x4787c62a as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 6], S13, _mm256_set1_epi32((0xa8304613 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 7], S14, _mm256_set1_epi32((0xfd469501 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 8], S11, _mm256_set1_epi32((0x698098d8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 9], S12, _mm256_set1_epi32((0x8b44f7af as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[10], S13, _mm256_set1_epi32((0xffff5bb1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[11], S14, _mm256_set1_epi32((0x895cd7be as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[12], S11, _mm256_set1_epi32((0x6b901122 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[13], S12, _mm256_set1_epi32((0xfd987193 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[14], S13, _mm256_set1_epi32((0xa679438e as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[15], S14, _mm256_set1_epi32((0x49b40821 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 0], S11, _mm256_set1_epi32((0xd76aa478_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 1], S12, _mm256_set1_epi32((0xe8c7b756_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 2], S13, _mm256_set1_epi32((0x242070db_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 3], S14, _mm256_set1_epi32((0xc1bdceee_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 4], S11, _mm256_set1_epi32((0xf57c0faf_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 5], S12, _mm256_set1_epi32((0x4787c62a_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 6], S13, _mm256_set1_epi32((0xa8304613_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 7], S14, _mm256_set1_epi32((0xfd469501_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 8], S11, _mm256_set1_epi32((0x698098d8_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 9], S12, _mm256_set1_epi32((0x8b44f7af_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[10], S13, _mm256_set1_epi32((0xffff5bb1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[11], S14, _mm256_set1_epi32((0x895cd7be_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[12], S11, _mm256_set1_epi32((0x6b901122_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[13], S12, _mm256_set1_epi32((0xfd987193_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[14], S13, _mm256_set1_epi32((0xa679438e_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[15], S14, _mm256_set1_epi32((0x49b40821_u32) as i32));
 
         // round 2 G
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 1], S21, _mm256_set1_epi32((0xf61e2562 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[ 6], S22, _mm256_set1_epi32((0xc040b340 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[11], S23, _mm256_set1_epi32((0x265e5a51 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 0], S24, _mm256_set1_epi32((0xe9b6c7aa as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 5], S21, _mm256_set1_epi32((0xd62f105d as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[10], S22, _mm256_set1_epi32(( 0x2441453 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[15], S23, _mm256_set1_epi32((0xd8a1e681 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 4], S24, _mm256_set1_epi32((0xe7d3fbc8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 9], S21, _mm256_set1_epi32((0x21e1cde6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[14], S22, _mm256_set1_epi32((0xc33707d6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[ 3], S23, _mm256_set1_epi32((0xf4d50d87 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 8], S24, _mm256_set1_epi32((0x455a14ed as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[13], S21, _mm256_set1_epi32((0xa9e3e905 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[ 2], S22, _mm256_set1_epi32((0xfcefa3f8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[ 7], S23, _mm256_set1_epi32((0x676f02d9 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[12], S24, _mm256_set1_epi32((0x8d2a4c8a as u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 1], S21, _mm256_set1_epi32((0xf61e2562_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[ 6], S22, _mm256_set1_epi32((0xc040b340_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[11], S23, _mm256_set1_epi32((0x265e5a51_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 0], S24, _mm256_set1_epi32((0xe9b6c7aa_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 5], S21, _mm256_set1_epi32((0xd62f105d_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[10], S22, _mm256_set1_epi32(( 0x2441453_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[15], S23, _mm256_set1_epi32((0xd8a1e681_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 4], S24, _mm256_set1_epi32((0xe7d3fbc8_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 9], S21, _mm256_set1_epi32((0x21e1cde6_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[14], S22, _mm256_set1_epi32((0xc33707d6_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[ 3], S23, _mm256_set1_epi32((0xf4d50d87_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 8], S24, _mm256_set1_epi32((0x455a14ed_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[13], S21, _mm256_set1_epi32((0xa9e3e905_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[ 2], S22, _mm256_set1_epi32((0xfcefa3f8_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[ 7], S23, _mm256_set1_epi32((0x676f02d9_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[12], S24, _mm256_set1_epi32((0x8d2a4c8a_u32) as i32));
 
         // round 3 H
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 5], S31, _mm256_set1_epi32((0xfffa3942 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 8], S32, _mm256_set1_epi32((0x8771f681 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[11], S33, _mm256_set1_epi32((0x6d9d6122 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[14], S34, _mm256_set1_epi32((0xfde5380c as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 1], S31, _mm256_set1_epi32((0xa4beea44 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 4], S32, _mm256_set1_epi32((0x4bdecfa9 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 7], S33, _mm256_set1_epi32((0xf6bb4b60 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[10], S34, _mm256_set1_epi32((0xbebfbc70 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[13], S31, _mm256_set1_epi32((0x289b7ec6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 0], S32, _mm256_set1_epi32((0xeaa127fa as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 3], S33, _mm256_set1_epi32((0xd4ef3085 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 6], S34, _mm256_set1_epi32(( 0x4881d05 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 9], S31, _mm256_set1_epi32((0xd9d4d039 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[12], S32, _mm256_set1_epi32((0xe6db99e5 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[15], S33, _mm256_set1_epi32((0x1fa27cf8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 2], S34, _mm256_set1_epi32((0xc4ac5665 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 5], S31, _mm256_set1_epi32((0xfffa3942_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 8], S32, _mm256_set1_epi32((0x8771f681_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[11], S33, _mm256_set1_epi32((0x6d9d6122_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[14], S34, _mm256_set1_epi32((0xfde5380c_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 1], S31, _mm256_set1_epi32((0xa4beea44_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 4], S32, _mm256_set1_epi32((0x4bdecfa9_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 7], S33, _mm256_set1_epi32((0xf6bb4b60_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[10], S34, _mm256_set1_epi32((0xbebfbc70_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[13], S31, _mm256_set1_epi32((0x289b7ec6_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 0], S32, _mm256_set1_epi32((0xeaa127fa_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 3], S33, _mm256_set1_epi32((0xd4ef3085_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 6], S34, _mm256_set1_epi32(( 0x4881d05_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 9], S31, _mm256_set1_epi32((0xd9d4d039_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[12], S32, _mm256_set1_epi32((0xe6db99e5_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[15], S33, _mm256_set1_epi32((0x1fa27cf8_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 2], S34, _mm256_set1_epi32((0xc4ac5665_u32) as i32));
 
         // round 4 I
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 0], S41, _mm256_set1_epi32((0xf4292244 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 7], S42, _mm256_set1_epi32((0x432aff97 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[14], S43, _mm256_set1_epi32((0xab9423a7 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 5], S44, _mm256_set1_epi32((0xfc93a039 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[12], S41, _mm256_set1_epi32((0x655b59c3 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 3], S42, _mm256_set1_epi32((0x8f0ccc92 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[10], S43, _mm256_set1_epi32((0xffeff47d as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 1], S44, _mm256_set1_epi32((0x85845dd1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 8], S41, _mm256_set1_epi32((0x6fa87e4f as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[15], S42, _mm256_set1_epi32((0xfe2ce6e0 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 6], S43, _mm256_set1_epi32((0xa3014314 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[13], S44, _mm256_set1_epi32((0x4e0811a1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 4], S41, _mm256_set1_epi32((0xf7537e82 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[11], S42, _mm256_set1_epi32((0xbd3af235 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 2], S43, _mm256_set1_epi32((0x2ad7d2bb as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 9], S44, _mm256_set1_epi32((0xeb86d391 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 0], S41, _mm256_set1_epi32((0xf4292244_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 7], S42, _mm256_set1_epi32((0x432aff97_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[14], S43, _mm256_set1_epi32((0xab9423a7_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 5], S44, _mm256_set1_epi32((0xfc93a039_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[12], S41, _mm256_set1_epi32((0x655b59c3_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 3], S42, _mm256_set1_epi32((0x8f0ccc92_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[10], S43, _mm256_set1_epi32((0xffeff47d_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 1], S44, _mm256_set1_epi32((0x85845dd1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 8], S41, _mm256_set1_epi32((0x6fa87e4f_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[15], S42, _mm256_set1_epi32((0xfe2ce6e0_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 6], S43, _mm256_set1_epi32((0xa3014314_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[13], S44, _mm256_set1_epi32((0x4e0811a1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 4], S41, _mm256_set1_epi32((0xf7537e82_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[11], S42, _mm256_set1_epi32((0xbd3af235_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 2], S43, _mm256_set1_epi32((0x2ad7d2bb_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 9], S44, _mm256_set1_epi32((0xeb86d391_u32) as i32));
 
         self.state[0] = unsafe { _mm256_add_epi32(self.state[0], a) };
         self.state[1] = unsafe { _mm256_add_epi32(self.state[1], b) };
@@ -521,76 +527,76 @@ impl MD5_AVX2 {
         }
 
         // round 1 F
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 0], S11, _mm256_set1_epi32((0xd76aa478 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 1], S12, _mm256_set1_epi32((0xe8c7b756 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 2], S13, _mm256_set1_epi32((0x242070db as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 3], S14, _mm256_set1_epi32((0xc1bdceee as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 4], S11, _mm256_set1_epi32((0xf57c0faf as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 5], S12, _mm256_set1_epi32((0x4787c62a as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 6], S13, _mm256_set1_epi32((0xa8304613 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 7], S14, _mm256_set1_epi32((0xfd469501 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 8], S11, _mm256_set1_epi32((0x698098d8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 9], S12, _mm256_set1_epi32((0x8b44f7af as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[10], S13, _mm256_set1_epi32((0xffff5bb1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[11], S14, _mm256_set1_epi32((0x895cd7be as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[12], S11, _mm256_set1_epi32((0x6b901122 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[13], S12, _mm256_set1_epi32((0xfd987193 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[14], S13, _mm256_set1_epi32((0xa679438e as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[15], S14, _mm256_set1_epi32((0x49b40821 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 0], S11, _mm256_set1_epi32((0xd76aa478_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 1], S12, _mm256_set1_epi32((0xe8c7b756_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 2], S13, _mm256_set1_epi32((0x242070db_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 3], S14, _mm256_set1_epi32((0xc1bdceee_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 4], S11, _mm256_set1_epi32((0xf57c0faf_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 5], S12, _mm256_set1_epi32((0x4787c62a_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[ 6], S13, _mm256_set1_epi32((0xa8304613_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[ 7], S14, _mm256_set1_epi32((0xfd469501_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[ 8], S11, _mm256_set1_epi32((0x698098d8_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[ 9], S12, _mm256_set1_epi32((0x8b44f7af_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[10], S13, _mm256_set1_epi32((0xffff5bb1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[11], S14, _mm256_set1_epi32((0x895cd7be_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, a, b, c, d, x[12], S11, _mm256_set1_epi32((0x6b901122_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, d, a, b, c, x[13], S12, _mm256_set1_epi32((0xfd987193_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, c, d, a, b, x[14], S13, _mm256_set1_epi32((0xa679438e_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_f_avx2, b, c, d, a, x[15], S14, _mm256_set1_epi32((0x49b40821_u32) as i32));
 
         // round 2 G
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 1], S21, _mm256_set1_epi32((0xf61e2562 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[ 6], S22, _mm256_set1_epi32((0xc040b340 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[11], S23, _mm256_set1_epi32((0x265e5a51 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 0], S24, _mm256_set1_epi32((0xe9b6c7aa as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 5], S21, _mm256_set1_epi32((0xd62f105d as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[10], S22, _mm256_set1_epi32(( 0x2441453 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[15], S23, _mm256_set1_epi32((0xd8a1e681 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 4], S24, _mm256_set1_epi32((0xe7d3fbc8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[ 9], S21, _mm256_set1_epi32((0x21e1cde6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[14], S22, _mm256_set1_epi32((0xc33707d6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[ 3], S23, _mm256_set1_epi32((0xf4d50d87 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[ 8], S24, _mm256_set1_epi32((0x455a14ed as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, a, b, c, d, x[13], S21, _mm256_set1_epi32((0xa9e3e905 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, d, a, b, c, x[ 2], S22, _mm256_set1_epi32((0xfcefa3f8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, c, d, a, b, x[ 7], S23, _mm256_set1_epi32((0x676f02d9 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_g_avx2, b, c, d, a, x[12], S24, _mm256_set1_epi32((0x8d2a4c8a as u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 1], S21, _mm256_set1_epi32((0xf61e2562_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[ 6], S22, _mm256_set1_epi32((0xc040b340_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[11], S23, _mm256_set1_epi32((0x265e5a51_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 0], S24, _mm256_set1_epi32((0xe9b6c7aa_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 5], S21, _mm256_set1_epi32((0xd62f105d_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[10], S22, _mm256_set1_epi32(( 0x2441453_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[15], S23, _mm256_set1_epi32((0xd8a1e681_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 4], S24, _mm256_set1_epi32((0xe7d3fbc8_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[ 9], S21, _mm256_set1_epi32((0x21e1cde6_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[14], S22, _mm256_set1_epi32((0xc33707d6_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[ 3], S23, _mm256_set1_epi32((0xf4d50d87_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[ 8], S24, _mm256_set1_epi32((0x455a14ed_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(a, b, c, d, x[13], S21, _mm256_set1_epi32((0xa9e3e905_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(d, a, b, c, x[ 2], S22, _mm256_set1_epi32((0xfcefa3f8_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(c, d, a, b, x[ 7], S23, _mm256_set1_epi32((0x676f02d9_u32) as i32));
+        MD5_AVX2_FUNCTION_G!(b, c, d, a, x[12], S24, _mm256_set1_epi32((0x8d2a4c8a_u32) as i32));
 
         // round 3 H
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 5], S31, _mm256_set1_epi32((0xfffa3942 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 8], S32, _mm256_set1_epi32((0x8771f681 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[11], S33, _mm256_set1_epi32((0x6d9d6122 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[14], S34, _mm256_set1_epi32((0xfde5380c as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 1], S31, _mm256_set1_epi32((0xa4beea44 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 4], S32, _mm256_set1_epi32((0x4bdecfa9 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 7], S33, _mm256_set1_epi32((0xf6bb4b60 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[10], S34, _mm256_set1_epi32((0xbebfbc70 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[13], S31, _mm256_set1_epi32((0x289b7ec6 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 0], S32, _mm256_set1_epi32((0xeaa127fa as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 3], S33, _mm256_set1_epi32((0xd4ef3085 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 6], S34, _mm256_set1_epi32(( 0x4881d05 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 9], S31, _mm256_set1_epi32((0xd9d4d039 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[12], S32, _mm256_set1_epi32((0xe6db99e5 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[15], S33, _mm256_set1_epi32((0x1fa27cf8 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 2], S34, _mm256_set1_epi32((0xc4ac5665 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 5], S31, _mm256_set1_epi32((0xfffa3942_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 8], S32, _mm256_set1_epi32((0x8771f681_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[11], S33, _mm256_set1_epi32((0x6d9d6122_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[14], S34, _mm256_set1_epi32((0xfde5380c_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 1], S31, _mm256_set1_epi32((0xa4beea44_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 4], S32, _mm256_set1_epi32((0x4bdecfa9_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 7], S33, _mm256_set1_epi32((0xf6bb4b60_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[10], S34, _mm256_set1_epi32((0xbebfbc70_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[13], S31, _mm256_set1_epi32((0x289b7ec6_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[ 0], S32, _mm256_set1_epi32((0xeaa127fa_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[ 3], S33, _mm256_set1_epi32((0xd4ef3085_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 6], S34, _mm256_set1_epi32(( 0x4881d05_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, a, b, c, d, x[ 9], S31, _mm256_set1_epi32((0xd9d4d039_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, d, a, b, c, x[12], S32, _mm256_set1_epi32((0xe6db99e5_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, c, d, a, b, x[15], S33, _mm256_set1_epi32((0x1fa27cf8_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_h_avx2, b, c, d, a, x[ 2], S34, _mm256_set1_epi32((0xc4ac5665_u32) as i32));
 
         // round 4 I
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 0], S41, _mm256_set1_epi32((0xf4292244 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 7], S42, _mm256_set1_epi32((0x432aff97 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[14], S43, _mm256_set1_epi32((0xab9423a7 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 5], S44, _mm256_set1_epi32((0xfc93a039 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[12], S41, _mm256_set1_epi32((0x655b59c3 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 3], S42, _mm256_set1_epi32((0x8f0ccc92 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[10], S43, _mm256_set1_epi32((0xffeff47d as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 1], S44, _mm256_set1_epi32((0x85845dd1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 8], S41, _mm256_set1_epi32((0x6fa87e4f as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[15], S42, _mm256_set1_epi32((0xfe2ce6e0 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 6], S43, _mm256_set1_epi32((0xa3014314 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[13], S44, _mm256_set1_epi32((0x4e0811a1 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 4], S41, _mm256_set1_epi32((0xf7537e82 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[11], S42, _mm256_set1_epi32((0xbd3af235 as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 2], S43, _mm256_set1_epi32((0x2ad7d2bb as u32) as i32));
-        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 9], S44, _mm256_set1_epi32((0xeb86d391 as u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 0], S41, _mm256_set1_epi32((0xf4292244_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 7], S42, _mm256_set1_epi32((0x432aff97_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[14], S43, _mm256_set1_epi32((0xab9423a7_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 5], S44, _mm256_set1_epi32((0xfc93a039_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[12], S41, _mm256_set1_epi32((0x655b59c3_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[ 3], S42, _mm256_set1_epi32((0x8f0ccc92_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[10], S43, _mm256_set1_epi32((0xffeff47d_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 1], S44, _mm256_set1_epi32((0x85845dd1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 8], S41, _mm256_set1_epi32((0x6fa87e4f_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[15], S42, _mm256_set1_epi32((0xfe2ce6e0_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 6], S43, _mm256_set1_epi32((0xa3014314_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[13], S44, _mm256_set1_epi32((0x4e0811a1_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, a, b, c, d, x[ 4], S41, _mm256_set1_epi32((0xf7537e82_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, d, a, b, c, x[11], S42, _mm256_set1_epi32((0xbd3af235_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, c, d, a, b, x[ 2], S43, _mm256_set1_epi32((0x2ad7d2bb_u32) as i32));
+        MD5_AVX2_FUNCTION!(md5_i_avx2, b, c, d, a, x[ 9], S44, _mm256_set1_epi32((0xeb86d391_u32) as i32));
 
         self.state[0] = unsafe { _mm256_add_epi32(self.state[0], a) };
         self.state[1] = unsafe { _mm256_add_epi32(self.state[1], b) };
@@ -641,7 +647,7 @@ impl MD5_AVX2 {
     }
 
     fn update(&mut self, data1: &[u8], data2: &[u8], data3: &[u8], data4: &[u8], data5: &[u8], data6: &[u8], data7: &[u8], data8: &[u8]) {
-        let mut i = 0;
+        let mut i;
         let mut index = (self.count[0] >> 3) & 0x3F;
         let data_len = data1.len();
 
@@ -735,7 +741,7 @@ impl MD5_AVX2 {
     pub fn digest(input: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update1(input);
-        return object.finalize();
+        object.finalize()
     }
 
     pub fn digest2(input1: &[u8], input2: &[u8]) {
@@ -785,10 +791,10 @@ impl Default for MD5_AVX2 {
     fn default() -> Self {
         Self {
             state: [
-                unsafe { _mm256_set1_epi32((0x67452301 as u32) as i32) },
-                unsafe { _mm256_set1_epi32((0xefcdab89 as u32) as i32) },
-                unsafe { _mm256_set1_epi32((0x98badcfe as u32) as i32) },
-                unsafe { _mm256_set1_epi32((0x10325476 as u32) as i32) },
+                unsafe { _mm256_set1_epi32((0x67452301_u32) as i32) },
+                unsafe { _mm256_set1_epi32((0xefcdab89_u32) as i32) },
+                unsafe { _mm256_set1_epi32((0x98badcfe_u32) as i32) },
+                unsafe { _mm256_set1_epi32((0x10325476_u32) as i32) },
             ],
             count: [0, 0],
             blocks: [[0; 64]; 8],
