@@ -11,8 +11,6 @@ use core::arch::x86_64::*;
 macro_rules! constify_imm8 {
     ($imm8:expr, $expand:ident) => {
         #[allow(overflowing_literals)]
-        // Cannot use shorthad like x @ 0...254 => $expand!(x),
-        // because some intrinsics expect u32 whereas others i32!
         match ($imm8) & 0b1111_1111 {
             0 => $expand!(0),
             1 => $expand!(1),
@@ -1066,46 +1064,46 @@ impl MD5_AVX2 {
         object.finalize()
     }
 
-    pub fn digest2(input1: &[u8], input2: &[u8]) {
+    pub fn digest2(input1: &[u8], input2: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update2(input1, input2);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest3(input1: &[u8], input2: &[u8], input3: &[u8]) {
+    pub fn digest3(input1: &[u8], input2: &[u8], input3: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update3(input1, input2, input3);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest4(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8]) {
+    pub fn digest4(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update4(input1, input2, input3, input4);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest5(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8]) {
+    pub fn digest5(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update5(input1, input2, input3, input4, input5);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest6(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8]) {
+    pub fn digest6(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update6(input1, input2, input3, input4, input5, input6);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest7(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8], input7: &[u8]) {
+    pub fn digest7(input1: &[u8], input2: &[u8], input3: &[u8], input4: &[u8], input5: &[u8], input6: &[u8], input7: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update7(input1, input2, input3, input4, input5, input6, input7);
-        object.finalize();
+        object.finalize()
     }
 
-    pub fn digest8(input1: &[u8],input2: &[u8],input3: &[u8],input4: &[u8],input5: &[u8],input6: &[u8],input7: &[u8],input8: &[u8]) {
+    pub fn digest8(input1: &[u8],input2: &[u8],input3: &[u8],input4: &[u8],input5: &[u8],input6: &[u8],input7: &[u8],input8: &[u8]) -> [[u8; 16]; 8] {
         let mut object = Self::default();
         object.update8(input1, input2, input3, input4, input5, input6, input7, input8);
-        object.finalize();
+        object.finalize()
     }
 }
 
