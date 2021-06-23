@@ -1,6 +1,4 @@
-use std::env;
-
-use md5::MD5_AVX2;
+use md5::Md5Avx2;
 
 /// convert bytes to hex string
 /// code taken from hex project: https://docs.rs/crate/hex/0.1.0/source/src/lib.rs
@@ -31,7 +29,7 @@ fn main() {
         "this is a test string 8",
     ];
 
-    let hash = MD5_AVX2::digest8(
+    let hash = Md5Avx2::digest8(
         &test_strs[0].as_bytes(),
         &test_strs[1].as_bytes(),
         &test_strs[2].as_bytes(),

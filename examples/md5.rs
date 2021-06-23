@@ -1,6 +1,3 @@
-
-use std::env;
-
 use md5::Md5;
 
 /// convert bytes to hex string

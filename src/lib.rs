@@ -1,11 +1,14 @@
 #![no_std]
+
 #![feature(core_intrinsics)]
 #![feature(test)]
 #![feature(stdsimd)]
 #![feature(stmt_expr_attributes)]
 
-use core::default::Default;
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::too_many_arguments)]
 
+use core::default::Default;
 use core::arch::x86_64::*;
 
 macro_rules! constify_imm8 {
@@ -299,7 +302,6 @@ fn encode(data: &[u64], output: &mut [u8]) {
 fn encode_32(data: &u32, output: &mut [u8]) {
     let len = 4;
 
-    let mut i = 0;
     let mut j = 0;
 
     while j < len {
@@ -309,7 +311,6 @@ fn encode_32(data: &u32, output: &mut [u8]) {
         output[j+2] = ((data >> 16) & 0xff) as u8;
         output[j+3] = ((data >> 24) & 0xff) as u8;
 
-        i += 1;
         j += 4;
     }
 }
@@ -389,7 +390,7 @@ fn md5_i_avx2(x: __m256i, y: __m256i, z: __m256i) -> __m256i {
     unsafe { _mm256_xor_si256(y, _mm256_or_si256(x, _mm256_andnot_si256(z, _mm256_cmpeq_epi32(z, z)))) }
 }
 
-pub struct MD5_AVX2 {
+pub struct Md5Avx2 {
     state: [__m256i; 4],
     count: [u64; 2],
     blocks: [[u8; 64]; 8],
@@ -706,10 +707,10 @@ impl Default for Md5 {
     fn default() -> Self {
         Self {
             state: [
-                ((0x67452301_u32)),
-                ((0xefcdab89_u32)),
-                ((0x98badcfe_u32)),
-                ((0x10325476_u32)),
+                0x67452301_u32,
+                0xefcdab89_u32,
+                0x98badcfe_u32,
+                0x10325476_u32,
             ],
             count: [0, 0],
             block: [0; 64],
@@ -717,7 +718,7 @@ impl Default for Md5 {
     }
 }
 
-impl MD5_AVX2 {
+impl Md5Avx2 {
 
     fn transform_blocks(&mut self) {
         let mut a: __m256i = self.state[0];
@@ -1107,7 +1108,7 @@ impl MD5_AVX2 {
     }
 }
 
-impl Default for MD5_AVX2 {
+impl Default for Md5Avx2 {
     fn default() -> Self {
         Self {
             state: [
@@ -1155,25 +1156,25 @@ mod tests {
 
     #[test]
     fn md5_avx2_32bytes() {
-        let hash = MD5_AVX2::digest("wqvDrDLilCUevxUw5fWEuVc6y6ElCrHg".as_bytes());
+        let hash = Md5Avx2::digest("wqvDrDLilCUevxUw5fWEuVc6y6ElCrHg".as_bytes());
         assert_eq!(hash[0], [0x69, 0xca, 0x36, 0x72, 0x1d, 0xd0, 0x20, 0x97, 0x82, 0xc3, 0x76, 0x17, 0xf2, 0x20, 0xab, 0x82]);
     }
 
     #[test]
     fn md5_avx2_64bytes() {
-        let hash = MD5_AVX2::digest("K7CN3VzXyY63NXmW15TKA4O6vJtVrLc7I0B5qHRtBir5PkwSt6xgJopOCunPk2ky".as_bytes());
+        let hash = Md5Avx2::digest("K7CN3VzXyY63NXmW15TKA4O6vJtVrLc7I0B5qHRtBir5PkwSt6xgJopOCunPk2ky".as_bytes());
         assert_eq!(hash[0], [0x6f, 0xbe, 0xd0, 0x7f, 0xcc, 0x87, 0x90, 0xb2, 0xcb, 0x56, 0x03, 0x02, 0xa5, 0xc7, 0x5e, 0x56]);
     }
 
     #[test]
     fn md5_avx2_128bytes() {
-        let hash = MD5_AVX2::digest("KAjb6sifm7DwdyJyMXT3np6WZVfXJiEskX1fN7V8YOatxuRkpHYZmqDXY2Kn2pfnV63l0bodaXjRdVF5m2z1bC7QpdQi3UHRI9KAqWs0vO0QjT5XtkTXKlaRK4CiBsT1".as_bytes());
+        let hash = Md5Avx2::digest("KAjb6sifm7DwdyJyMXT3np6WZVfXJiEskX1fN7V8YOatxuRkpHYZmqDXY2Kn2pfnV63l0bodaXjRdVF5m2z1bC7QpdQi3UHRI9KAqWs0vO0QjT5XtkTXKlaRK4CiBsT1".as_bytes());
         assert_eq!(hash[0], [0x59, 0xa4, 0x18, 0xec, 0xcd, 0xff, 0x43, 0xeb, 0xfa, 0xb1, 0x63, 0x91, 0x6c, 0x60, 0x2c, 0x15]);
     }
 
     #[test]
     fn md5_avx2_256bytes() {
-        let hash = MD5_AVX2::digest("QnpFg2P1SEQ0L9tcNwBROCW7jVtFeMt0RuF7QODKkgD75CPDi1pAB1GtMcq0G1pmNE6J3IuPpF33uPtOs4sNwU7lKcnF8SU016PKWPeVEpuKQ2ksT9enIf1hVrzlypOkhFTFhIS28IT9OQZ3BS3693487mSb6QNuuaBCD8yNWWlo74c79EFWUWNaAmRcSxVaNcbDa80SovlnL8lyO2yS7XlmE7rPmLI4IvPtko3QguI4Th2JPrVnM7QCCjMgvlIO".as_bytes());
+        let hash = Md5Avx2::digest("QnpFg2P1SEQ0L9tcNwBROCW7jVtFeMt0RuF7QODKkgD75CPDi1pAB1GtMcq0G1pmNE6J3IuPpF33uPtOs4sNwU7lKcnF8SU016PKWPeVEpuKQ2ksT9enIf1hVrzlypOkhFTFhIS28IT9OQZ3BS3693487mSb6QNuuaBCD8yNWWlo74c79EFWUWNaAmRcSxVaNcbDa80SovlnL8lyO2yS7XlmE7rPmLI4IvPtko3QguI4Th2JPrVnM7QCCjMgvlIO".as_bytes());
         assert_eq!(hash[0], [0xe5, 0x0b, 0xe7, 0x33, 0x07, 0x72, 0xe0, 0x89, 0xf6, 0x5e, 0x0e, 0xfd, 0x98, 0x69, 0xc9, 0xe3]);
     }
 
@@ -1208,28 +1209,28 @@ mod tests {
     #[bench]
     fn bench_md5_avx2_32bytes_digest(b: &mut Bencher) {
         b.iter(|| {
-            MD5_AVX2::digest("wqvDrDLilCUevxUw5fWEuVc6y6ElCrHg".as_bytes());
+            Md5Avx2::digest("wqvDrDLilCUevxUw5fWEuVc6y6ElCrHg".as_bytes());
         });
     }
 
     #[bench]
     fn bench_md5_avx2_64bytes_digest(b: &mut Bencher) {
         b.iter(|| {
-            MD5_AVX2::digest("K7CN3VzXyY63NXmW15TKA4O6vJtVrLc7I0B5qHRtBir5PkwSt6xgJopOCunPk2ky".as_bytes());
+            Md5Avx2::digest("K7CN3VzXyY63NXmW15TKA4O6vJtVrLc7I0B5qHRtBir5PkwSt6xgJopOCunPk2ky".as_bytes());
         });
     }
 
     #[bench]
     fn bench_md5_avx2_128bytes_digest(b: &mut Bencher) {
         b.iter(|| {
-            MD5_AVX2::digest("KAjb6sifm7DwdyJyMXT3np6WZVfXJiEskX1fN7V8YOatxuRkpHYZmqDXY2Kn2pfnV63l0bodaXjRdVF5m2z1bC7QpdQi3UHRI9KAqWs0vO0QjT5XtkTXKlaRK4CiBsT1".as_bytes());
+            Md5Avx2::digest("KAjb6sifm7DwdyJyMXT3np6WZVfXJiEskX1fN7V8YOatxuRkpHYZmqDXY2Kn2pfnV63l0bodaXjRdVF5m2z1bC7QpdQi3UHRI9KAqWs0vO0QjT5XtkTXKlaRK4CiBsT1".as_bytes());
         });
     }
 
     #[bench]
     fn bench_md5_avx2_256bytes_digest(b: &mut Bencher) {
         b.iter(|| {
-            MD5_AVX2::digest("QnpFg2P1SEQ0L9tcNwBROCW7jVtFeMt0RuF7QODKkgD75CPDi1pAB1GtMcq0G1pmNE6J3IuPpF33uPtOs4sNwU7lKcnF8SU016PKWPeVEpuKQ2ksT9enIf1hVrzlypOkhFTFhIS28IT9OQZ3BS3693487mSb6QNuuaBCD8yNWWlo74c79EFWUWNaAmRcSxVaNcbDa80SovlnL8lyO2yS7XlmE7rPmLI4IvPtko3QguI4Th2JPrVnM7QCCjMgvlIO".as_bytes());
+            Md5Avx2::digest("QnpFg2P1SEQ0L9tcNwBROCW7jVtFeMt0RuF7QODKkgD75CPDi1pAB1GtMcq0G1pmNE6J3IuPpF33uPtOs4sNwU7lKcnF8SU016PKWPeVEpuKQ2ksT9enIf1hVrzlypOkhFTFhIS28IT9OQZ3BS3693487mSb6QNuuaBCD8yNWWlo74c79EFWUWNaAmRcSxVaNcbDa80SovlnL8lyO2yS7XlmE7rPmLI4IvPtko3QguI4Th2JPrVnM7QCCjMgvlIO".as_bytes());
         });
     }
 }
