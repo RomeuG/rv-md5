@@ -118,15 +118,15 @@ Benchmarks
 ==========
 
 ```
-test tests::bench_md5_128bytes_digest      ... bench:         328 ns/iter (+/- 9)
-test tests::bench_md5_256bytes_digest      ... bench:         533 ns/iter (+/- 40)
-test tests::bench_md5_32bytes_digest       ... bench:         123 ns/iter (+/- 5)
-test tests::bench_md5_64bytes_digest       ... bench:         224 ns/iter (+/- 22)
+test tests::bench_md5_128bytes_digest      ... bench:         325 ns/iter (+/- 4)
+test tests::bench_md5_256bytes_digest      ... bench:         530 ns/iter (+/- 4)
+test tests::bench_md5_32bytes_digest       ... bench:         119 ns/iter (+/- 2)
+test tests::bench_md5_64bytes_digest       ... bench:         223 ns/iter (+/- 7)
 
-test tests::bench_md5_avx2_128bytes_digest ... bench:         462 ns/iter (+/- 13)
-test tests::bench_md5_avx2_256bytes_digest ... bench:         697 ns/iter (+/- 53)
-test tests::bench_md5_avx2_32bytes_digest  ... bench:         207 ns/iter (+/- 4)
-test tests::bench_md5_avx2_64bytes_digest  ... bench:         344 ns/iter (+/- 30)
+test tests::bench_md5_avx2_128bytes_digest ... bench:         456 ns/iter (+/- 9)
+test tests::bench_md5_avx2_256bytes_digest ... bench:         694 ns/iter (+/- 10)
+test tests::bench_md5_avx2_32bytes_digest  ... bench:         205 ns/iter (+/- 20)
+test tests::bench_md5_avx2_64bytes_digest  ... bench:         336 ns/iter (+/- 8)
 ```
 
 On the AVX2 implementation
