@@ -4,14 +4,16 @@ MD5 in Rust
 This is an implementation of the MD5 hashing algorithm in Rust, without the use of the
 Rust Standard Library. It includes a standard implementation and an AVX2 implementation.
 
+This project uses the *nightly* version of Rust!
+
 Examples
 ========
 
-This is the content of `examples/md5.rs`, using the normal RFC1321 MD5 implementation with
+This is the content of `examples/md5_example.rs`, using the normal RFC1321 MD5 implementation with
 some changes:
 
 ```rust
-use md5::Md5;
+use md5::md5::Md5;
 
 /// convert bytes to hex string
 /// code taken from hex project: https://docs.rs/crate/hex/0.1.0/source/src/lib.rs
@@ -61,10 +63,10 @@ fn main() {
 ```
 
 If your CPU supports AVX2, youy may want to take advantage of it by using the AVX2
-specific MD5 class, that is exemplified in `examples/md5_avx2.rs`:
+specific MD5 class, that is exemplified in `examples/md5_avx2_example.rs`:
 
 ```
-use md5::Md5Avx2;
+use md5::md5_avx2::Md5Avx2;
 
 /// convert bytes to hex string
 /// code taken from hex project: https://docs.rs/crate/hex/0.1.0/source/src/lib.rs
@@ -116,14 +118,15 @@ Benchmarks
 ==========
 
 ```
-test tests::bench_md5_128bytes_digest      ... bench:         354 ns/iter (+/- 47)
-test tests::bench_md5_256bytes_digest      ... bench:         578 ns/iter (+/- 52)
-test tests::bench_md5_32bytes_digest       ... bench:         140 ns/iter (+/- 46)
-test tests::bench_md5_64bytes_digest       ... bench:         251 ns/iter (+/- 59)
-test tests::bench_md5_avx2_128bytes_digest ... bench:         507 ns/iter (+/- 107)
-test tests::bench_md5_avx2_256bytes_digest ... bench:         793 ns/iter (+/- 301)
-test tests::bench_md5_avx2_32bytes_digest  ... bench:         230 ns/iter (+/- 60)
-test tests::bench_md5_avx2_64bytes_digest  ... bench:         383 ns/iter (+/- 119)
+test tests::bench_md5_128bytes_digest      ... bench:         328 ns/iter (+/- 9)
+test tests::bench_md5_256bytes_digest      ... bench:         533 ns/iter (+/- 40)
+test tests::bench_md5_32bytes_digest       ... bench:         123 ns/iter (+/- 5)
+test tests::bench_md5_64bytes_digest       ... bench:         224 ns/iter (+/- 22)
+
+test tests::bench_md5_avx2_128bytes_digest ... bench:         462 ns/iter (+/- 13)
+test tests::bench_md5_avx2_256bytes_digest ... bench:         697 ns/iter (+/- 53)
+test tests::bench_md5_avx2_32bytes_digest  ... bench:         207 ns/iter (+/- 4)
+test tests::bench_md5_avx2_64bytes_digest  ... bench:         344 ns/iter (+/- 30)
 ```
 
 On the AVX2 implementation
@@ -133,13 +136,21 @@ Thanks to the AVX2 implementation, it is possible to hash 8 strings at the same 
 only limitation is that the size of all strings has to be the same. If there is any string
 with a different size, then its result will be absolutely incorrect.
 
-LICENSE
+License
 =======
 
-Copyright 2021 Romeu Gomes
+Licensed under either of
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+at your option.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Contribution
+============
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
