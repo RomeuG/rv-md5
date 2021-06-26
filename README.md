@@ -4,7 +4,7 @@ MD5 in Rust
 This is an implementation of the MD5 hashing algorithm in Rust, without the use of the
 Rust Standard Library. It includes a standard implementation and an AVX2 implementation.
 
-This project uses the *nightly* version of Rust!
+This project uses the **nightly** version of Rust because of the SIMD instructions.
 
 Examples
 ========
@@ -65,7 +65,7 @@ fn main() {
 If your CPU supports AVX2, youy may want to take advantage of it by using the AVX2
 specific MD5 class, that is exemplified in `examples/md5_avx2_example.rs`:
 
-```
+```rust
 use md5::md5_avx2::Md5Avx2;
 
 /// convert bytes to hex string
