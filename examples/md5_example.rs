@@ -12,9 +12,7 @@ fn to_hex_string(data: &[u8]) -> String {
         v.push(CHARS[(byte & 0xf) as usize]);
     }
 
-    unsafe {
-        String::from_utf8_unchecked(v)
-    }
+    unsafe { String::from_utf8_unchecked(v) }
 }
 
 fn main() {

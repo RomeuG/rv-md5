@@ -1,9 +1,9 @@
 use core::arch::x86_64::*;
 
 pub const PAD: [u8; 64] = [
-    0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0,
 ];
 
 #[macro_export]
@@ -278,11 +278,10 @@ pub fn encode(data: &[u64], output: &mut [u8]) {
     let mut j = 0;
 
     while j < len {
-
         output[j] = (data[i] & 0xff) as u8;
-        output[j+1] = ((data[i] >> 8) & 0xff) as u8;
-        output[j+2] = ((data[i] >> 16) & 0xff) as u8;
-        output[j+3] = ((data[i] >> 24) & 0xff) as u8;
+        output[j + 1] = ((data[i] >> 8) & 0xff) as u8;
+        output[j + 2] = ((data[i] >> 16) & 0xff) as u8;
+        output[j + 3] = ((data[i] >> 24) & 0xff) as u8;
 
         i += 1;
         j += 4;
@@ -295,11 +294,10 @@ pub fn encode_32(data: &u32, output: &mut [u8]) {
     let mut j = 0;
 
     while j < len {
-
         output[j] = (data & 0xff) as u8;
-        output[j+1] = ((data >> 8) & 0xff) as u8;
-        output[j+2] = ((data >> 16) & 0xff) as u8;
-        output[j+3] = ((data >> 24) & 0xff) as u8;
+        output[j + 1] = ((data >> 8) & 0xff) as u8;
+        output[j + 2] = ((data >> 16) & 0xff) as u8;
+        output[j + 3] = ((data >> 24) & 0xff) as u8;
 
         j += 4;
     }
@@ -312,11 +310,10 @@ pub fn encode_32_avx2(data: &[u32], output: &mut [u8]) {
     let mut j = 0;
 
     while j < len {
-
         output[j] = (data[i] & 0xff) as u8;
-        output[j+1] = ((data[i] >> 8) & 0xff) as u8;
-        output[j+2] = ((data[i] >> 16) & 0xff) as u8;
-        output[j+3] = ((data[i] >> 24) & 0xff) as u8;
+        output[j + 1] = ((data[i] >> 8) & 0xff) as u8;
+        output[j + 2] = ((data[i] >> 16) & 0xff) as u8;
+        output[j + 3] = ((data[i] >> 24) & 0xff) as u8;
 
         i += 1;
         j += 4;
@@ -331,16 +328,16 @@ pub fn rotate_left(x: u32, n: u32) -> u32 {
 #[inline(always)]
 pub fn rotate_left_avx2(x: __m256i, n: i32) -> __m256i {
     macro_rules! slli {
-            ($amt_const:expr) => {
-                unsafe { _mm256_slli_epi32(x, $amt_const) }
-            };
-        }
+        ($amt_const:expr) => {
+            unsafe { _mm256_slli_epi32(x, $amt_const) }
+        };
+    }
 
     macro_rules! srli {
-            ($amt_const:expr) => {
-                unsafe { _mm256_srli_epi32(x, $amt_const) }
-            };
-        }
+        ($amt_const:expr) => {
+            unsafe { _mm256_srli_epi32(x, $amt_const) }
+        };
+    }
 
     let right_n = 32 - n;
     let left = constify_imm8!(n, slli);
@@ -348,5 +345,3 @@ pub fn rotate_left_avx2(x: __m256i, n: i32) -> __m256i {
 
     unsafe { _mm256_or_si256(left, right) }
 }
-
-
